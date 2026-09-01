@@ -11,6 +11,7 @@ const defaultSettings = {
   printerServiceUUID: '000018f0-0000-1000-8000-00805f9b34fb',
   printerCharacteristicUUID: '00002af1-0000-1000-8000-00805f9b34fb',
   autoConnectLastPrinter: false,
+  previewSize: 'normal', // 'normal' | 'large'
 };
 
 const SettingsContext = createContext(null);

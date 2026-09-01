@@ -71,6 +71,24 @@ function SettingsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
+        <h3 style={{ marginTop: 0 }}>Label Preview</h3>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row__label">Preview Size</div>
+            <div className="settings-row__hint">How large the label preview appears on Generate page</div>
+          </div>
+          <select
+            value={settings.previewSize}
+            onChange={(e) => updateSettings({ previewSize: e.target.value })}
+            style={{ padding: 8, border: '1px solid var(--color-border)', borderRadius: 6 }}
+          >
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
         <h3 style={{ marginTop: 0 }}>Printer Configuration</h3>
         <p className="settings-row__hint" style={{ marginBottom: 16 }}>
           Only change these if your printer's Bluetooth service UUIDs differ from default (XPrinter standard).

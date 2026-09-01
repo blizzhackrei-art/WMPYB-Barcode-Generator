@@ -3,10 +3,13 @@ import ProductForm from '../components/ProductForm';
 import LabelPreview from '../components/LabelPreview';
 import PrinterPanel from '../components/PrinterPanel';
 import { addProduct } from '../db/storage';
+import { useSettings } from '../context/SettingsContext';
 
 function GeneratePage() {
+  const { settings } = useSettings();
   const [product, setProduct] = useState(null);
   const labelCanvasRef = useRef(null);
+  const isLarge = settings.previewSize === 'large';
 
   function getLabelCanvas() {
     return labelCanvasRef.current;
@@ -25,11 +28,11 @@ function GeneratePage() {
     <div>
       <h1 className="page-title">Generate Label</h1>
       <div className="generate-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+        <div style={{ flex: isLarge ? '1 1 320px' : '1 1 320px', minWidth: 280, maxWidth: isLarge ? 360 : 'none' }}>
           <ProductForm onGenerate={handleGenerate} />
         </div>
 
-        <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+        <div style={{ flex: isLarge ? '2 1 480px' : '1 1 320px', minWidth: 280 }}>
           <h3 style={{ marginTop: 0 }}>Preview</h3>
           {product ? (
             <LabelPreview product={product} canvasRef={labelCanvasRef} />

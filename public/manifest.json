@@ -1,6 +1,6 @@
 {
-  "short_name": "BarcodeTag",
-  "name": "Barcode Tag Generator",
+  "short_name": "Barcode Gen",
+  "name": "Barcode Generator",
   "icons": [
     {
       "src": "favicon.ico",

@@ -29,7 +29,7 @@ function AppShell() {
   return (
     <div className="app-shell">
       <nav className="app-nav">
-        <div className="app-nav__brand">Barcode Tag</div>
+        <div className="app-nav__brand">Barcode Generator</div>
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
