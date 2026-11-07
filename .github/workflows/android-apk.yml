@@ -23,7 +23,7 @@ jobs:
 
       - name: Install and build web app
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           CI=false npm run build
 
       - name: Sync Capacitor
