@@ -17,7 +17,7 @@ root.render(
 reportWebVitals();
 
 // Register service worker for PWA install + offline support
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').catch((err) => {
       console.error('Service worker registration failed:', err);

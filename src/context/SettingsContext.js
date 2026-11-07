@@ -12,6 +12,17 @@ const defaultSettings = {
   printerCharacteristicUUID: '00002af1-0000-1000-8000-00805f9b34fb',
   autoConnectLastPrinter: false,
   previewSize: 'normal', // 'normal' | 'large'
+  // Printer connection
+  printerPlatform: 'auto', // 'auto' | 'windows' | 'android'
+  connectionMode: 'bluetooth', // 'bluetooth' | 'usb' | 'lan' | 'browser'
+  printerLanguage: 'escpos', // 'escpos' | 'tspl'
+  tsplGapMM: 2,
+  tsplDensity: 8,
+  tsplSpeed: 4,
+  lanHost: '',
+  lanPort: 9100,
+  windowsPrinterName: '',
+  androidUsbDeviceName: '',
 };
 
 const SettingsContext = createContext(null);

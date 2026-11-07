@@ -25,7 +25,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder --win nsis --x64"
   },
   "eslintConfig": {
     "extends": [
@@ -46,6 +48,39 @@
     ]
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.1"
+    "@capacitor/cli": "^8.5.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "main": "electron/main.js",
+  "homepage": ".",
+  "description": "Barcode Generator",
+  "author": "WMPYB",
+  "build": {
+    "appId": "com.yourcompany.barcodegenerator",
+    "productName": "Barcode Generator",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "package.json",
+      "!**/node_modules/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

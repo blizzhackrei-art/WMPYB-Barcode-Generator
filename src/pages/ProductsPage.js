@@ -3,7 +3,7 @@ import { getAllProducts, deleteProduct, updateProduct } from '../db/storage';
 import { useSettings } from '../context/SettingsContext';
 import EditProductModal from '../components/EditProductModal';
 import { drawProductLabel } from '../barcode/drawLabel';
-import { isConnected, printCanvas } from '../printer/printerService';
+import { isReady, notReadyMessage, printCanvas } from '../printer/printerService';
 
 function ProductsPage() {
   const { settings } = useSettings();
@@ -41,8 +41,8 @@ function ProductsPage() {
   }
 
   async function handleReprint(product) {
-    if (!isConnected()) {
-      alert('Connect a Bluetooth printer first (Generate page).');
+    if (!isReady(settings)) {
+      alert(notReadyMessage(settings) + ' (Generate page / Settings)');
       return;
     }
     setStatus(`Printing ${product.name || product.barcode}...`);
@@ -55,7 +55,7 @@ function ProductsPage() {
         showPrice: settings.showPrice,
         currencySymbol: settings.currencySymbol,
       });
-      await printCanvas(canvas);
+      await printCanvas(canvas, settings);
       setStatus('Reprint sent successfully.');
     } catch (err) {
       setStatus('Reprint failed: ' + err.message);
