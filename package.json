@@ -57,6 +57,7 @@
   "description": "Barcode Generator",
   "author": "WMPYB",
   "build": {
+    "extends": null,
     "appId": "com.yourcompany.barcodegenerator",
     "productName": "Barcode Generator",
     "directories": {
@@ -81,6 +82,9 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "extraMetadata": {
+      "main": "electron/main.js"
     }
   }
 }
