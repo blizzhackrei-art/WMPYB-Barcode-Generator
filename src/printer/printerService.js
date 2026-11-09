@@ -72,21 +72,29 @@ export function printerModeLabel(settings) {
   return MODE_LABELS[mode];
 }
 
+let btName = '';
+export const getBtName = () => btName;
+
 export async function scanAndConnect(onDeviceFound) {
   if (isNativePlatform()) {
     await nativeBt.initBle();
     return nativeBt.scanForPrinters(onDeviceFound);
   }
   const name = await webBt.connectPrinterWeb();
+  btName = name || 'Printer';
   return [{ deviceId: 'web', name }];
 }
 
-export async function connectDevice(deviceId) {
-  if (isNativePlatform()) return nativeBt.connectToPrinter(deviceId);
+export async function connectDevice(deviceId, name) {
+  if (isNativePlatform()) {
+    await nativeBt.connectToPrinter(deviceId);
+    btName = name || 'Printer';
+  }
   return true;
 }
 
 export async function disconnect() {
+  btName = '';
   if (isNativePlatform()) return nativeBt.disconnectPrinter();
   return webBt.disconnectPrinterWeb();
 }
@@ -180,4 +188,11 @@ export async function printCanvas(canvas, settings, copies = 1) {
   for (let i = 0; i < copies; i++) {
     await sendRaw(buildPrintBytes(canvas, settings, 1), settings);
   }
+}
+
+// Raw TSPL text command (for example GAPDETECT). Not for browser mode.
+export async function sendCommand(text, settings) {
+  if (effectiveMode(settings) === 'browser') throw new Error('Raw commands need Bluetooth, USB or LAN.');
+  const bytes = new Uint8Array(Array.from(text + '\r\n').map((c) => c.charCodeAt(0) & 0xff));
+  return sendRaw(bytes, settings);
 }

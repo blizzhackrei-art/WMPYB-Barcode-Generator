@@ -1,108 +1,108 @@
 import React, { useState } from 'react';
 import { randomEAN13, randomCode128, isValidEAN13 } from '../barcode/generateCode';
 import { useSettings } from '../context/SettingsContext';
+import { Field, Segmented, Notice, Icon } from './ui';
 
 function ProductForm({ onGenerate }) {
   const { settings } = useSettings();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [barcodeType, setBarcodeType] = useState('EAN13');
-  const [barcode, setBarcode] = useState('');
   const [mode, setMode] = useState('random');
+  const [barcode, setBarcode] = useState('');
+  const [error, setError] = useState('');
 
-  function handleGenerateRandom() {
-    const code = barcodeType === 'EAN13' ? randomEAN13() : randomCode128();
-    setBarcode(code);
+  const newCode = (type) => (type === 'EAN13' ? randomEAN13() : randomCode128());
+
+  function changeType(type) {
+    setBarcodeType(type);
+    setBarcode(mode === 'random' ? newCode(type) : '');
   }
 
-  function handleSubmit() {
-    if (settings.showProductName && !name) {
-      alert('Enter product name.');
-      return;
-    }
-    if (settings.showPrice && !price) {
-      alert('Enter price.');
-      return;
-    }
-    let finalCode = barcode;
-    if (mode === 'random' && !finalCode) {
-      finalCode = barcodeType === 'EAN13' ? randomEAN13() : randomCode128();
-      setBarcode(finalCode);
-    }
-    if (mode === 'manual' && barcodeType === 'EAN13' && !isValidEAN13(finalCode)) {
-      alert('Invalid EAN13 code. Must be 13 digits with correct check digit.');
-      return;
-    }
-    if (!finalCode) {
-      alert('Generate or enter a barcode first.');
-      return;
-    }
+  function changeMode(m) {
+    setMode(m);
+    setBarcode(m === 'random' ? newCode(barcodeType) : '');
+  }
 
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (settings.showProductName && !name.trim()) return setError('Enter a product name, or turn it off in Design.');
+    if (settings.showPrice && price === '') return setError('Enter a price, or turn it off in Design.');
+
+    const code = barcode || (mode === 'random' ? newCode(barcodeType) : '');
+    if (!code) return setError('Enter a barcode value.');
+    if (barcodeType === 'EAN13' && mode === 'manual' && !isValidEAN13(code)) {
+      return setError('EAN-13 needs 13 digits with a correct check digit.');
+    }
+    setBarcode(code);
     onGenerate({
-      name: name || '',
-      price: price ? parseFloat(price) : 0,
-      barcode: finalCode,
+      name: name.trim(),
+      price: price === '' ? 0 : parseFloat(price),
+      barcode: code,
       barcode_type: barcodeType,
     });
   }
 
   return (
-    <div className="card">
+    <form className="card form-card" onSubmit={handleSubmit} noValidate>
+      <h2 className="card-title">Product</h2>
+
       {settings.showProductName && (
-        <div className="field">
-          <label>Product Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Colorful SL300 SSD" />
-        </div>
+        <Field label="Product name">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Colorful SL300 SSD 256GB" />
+        </Field>
       )}
-
       {settings.showPrice && (
-        <div className="field">
-          <label>Price</label>
-          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 2500.00" />
-        </div>
+        <Field label="Price">
+          <input type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="2500.00" />
+        </Field>
       )}
 
-      <div className="field">
-        <label>Barcode Type</label>
-        <select value={barcodeType} onChange={(e) => { setBarcodeType(e.target.value); setBarcode(''); }}>
-          <option value="EAN13">EAN13</option>
-          <option value="CODE128">Code 128</option>
-        </select>
-      </div>
-
-      <div className="field">
-        <label>Barcode Source</label>
-        <select value={mode} onChange={(e) => { setMode(e.target.value); setBarcode(''); }}>
-          <option value="random">Random</option>
-          <option value="manual">Manual Entry</option>
-        </select>
-      </div>
-
-      {mode === 'random' && (
-        <div className="field">
-          <label>Generated Code</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn btn-secondary" onClick={handleGenerateRandom} type="button">Generate</button>
-            <span style={{ fontFamily: 'monospace', fontSize: '0.95rem' }}>{barcode}</span>
-          </div>
-        </div>
-      )}
-
-      {mode === 'manual' && (
-        <div className="field">
-          <label>Barcode Value</label>
-          <input
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            placeholder={barcodeType === 'EAN13' ? '13-digit number' : 'Any text/number'}
+      <div className="grid-2">
+        <Field label="Barcode type">
+          <Segmented
+            label="Barcode type"
+            value={barcodeType}
+            onChange={changeType}
+            options={[
+              { value: 'EAN13', label: 'EAN-13' },
+              { value: 'CODE128', label: 'Code 128' },
+            ]}
           />
-        </div>
+        </Field>
+        <Field label="Barcode value">
+          <Segmented
+            label="Barcode value source"
+            value={mode}
+            onChange={changeMode}
+            options={[
+              { value: 'random', label: 'Random' },
+              { value: 'manual', label: 'Type it' },
+            ]}
+          />
+        </Field>
+      </div>
+
+      {mode === 'random' ? (
+        <Field label="Generated value">
+          <div className="inline-row">
+            <input readOnly value={barcode} placeholder="Press Generate new value" className="mono" />
+            <button type="button" className="btn btn-secondary" onClick={() => setBarcode(newCode(barcodeType))}>
+              <Icon name="refresh" size={18} /> New value
+            </button>
+          </div>
+        </Field>
+      ) : (
+        <Field label="Barcode value" hint={barcodeType === 'EAN13' ? '13 digits, last digit is the check digit.' : 'Letters and numbers.'}>
+          <input className="mono" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder={barcodeType === 'EAN13' ? '6971043070098' : 'ITEM-0001'} />
+        </Field>
       )}
 
-      <button className="btn btn-primary" onClick={handleSubmit} style={{ width: '100%', marginTop: 8 }}>
-        Generate Label
-      </button>
-    </div>
+      {error && <Notice tone="bad">{error}</Notice>}
+
+      <button type="submit" className="btn btn-primary btn-block">Create label</button>
+    </form>
   );
 }
 

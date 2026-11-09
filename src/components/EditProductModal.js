@@ -1,41 +1,34 @@
 import React, { useState } from 'react';
+import { Field, Notice } from './ui';
 
 function EditProductModal({ product, onSave, onClose }) {
   const [name, setName] = useState(product.name || '');
-  const [price, setPrice] = useState(product.price || '');
+  const [price, setPrice] = useState(product.price ?? '');
+  const [error, setError] = useState('');
 
-  function handleSave() {
-    if (!name && !price) {
-      alert('Enter at least a name or price.');
-      return;
-    }
-    onSave({ ...product, name, price: parseFloat(price) || 0 });
+  function handleSave(e) {
+    e.preventDefault();
+    if (!name.trim() && price === '') return setError('Enter a name or a price.');
+    onSave({ ...product, name: name.trim(), price: parseFloat(price) || 0 });
   }
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 100,
-    }}>
-      <div className="card" style={{ width: 360, background: '#fff' }}>
-        <h3 style={{ marginTop: 0 }}>Edit Product</h3>
-
-        <div className="field">
-          <label>Product Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="modal-back" role="dialog" aria-modal="true" aria-label="Edit product">
+      <form className="modal card" onSubmit={handleSave}>
+        <h2 className="card-title">Edit product</h2>
+        <Field label="Product name">
+          <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </Field>
+        <Field label="Price">
+          <input type="number" inputMode="decimal" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </Field>
+        <p className="row-hint">Barcode {product.barcode} stays the same.</p>
+        {error && <Notice tone="bad">{error}</Notice>}
+        <div className="modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary">Save changes</button>
         </div>
-
-        <div className="field">
-          <label>Price</label>
-          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }

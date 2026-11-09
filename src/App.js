@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import GeneratePage from './pages/GeneratePage';
 import ProductsPage from './pages/ProductsPage';
-import SettingsPage from './pages/SettingsPage';
-import { SettingsProvider } from './context/SettingsContext';
+import DesignPage from './pages/DesignPage';
+import PrinterPage from './pages/PrinterPage';
+import AboutPage from './pages/AboutPage';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { initStorage } from './db/storage';
 import { applyPrinterUUIDs } from './printer/printerService';
-import { useSettings } from './context/SettingsContext';
+import { loadLabelFonts } from './barcode/drawLabel';
+import { Icon } from './components/ui';
 import './App.css';
 
-const NAV_ITEMS = [
-  { id: 'generate', label: 'Generate', icon: '⊞' },
-  { id: 'products', label: 'Products', icon: '☰' },
-  { id: 'settings', label: 'Settings', icon: '⚙' },
+const NAV = [
+  { id: 'generate', label: 'Create', icon: 'barcode' },
+  { id: 'products', label: 'Products', icon: 'list' },
+  { id: 'design', label: 'Design', icon: 'design' },
+  { id: 'printer', label: 'Printer', icon: 'printer' },
+  { id: 'about', label: 'About', icon: 'info' },
 ];
 
 function AppShell() {
@@ -20,43 +25,60 @@ function AppShell() {
 
   useEffect(() => {
     initStorage().catch((err) => console.error('Storage init failed:', err));
+    loadLabelFonts();
   }, []);
 
   useEffect(() => {
     applyPrinterUUIDs(settings.printerServiceUUID, settings.printerCharacteristicUUID);
   }, [settings.printerServiceUUID, settings.printerCharacteristicUUID]);
 
+  useEffect(() => {
+    const main = document.querySelector('.main');
+    if (main) main.scrollTo(0, 0);
+  }, [page]);
+
   return (
-    <div className="app-shell">
-      <nav className="app-nav">
-        <div className="app-nav__brand">Barcode Generator</div>
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={`app-nav__item ${page === item.id ? 'app-nav__item--active' : ''}`}
-            onClick={() => setPage(item.id)}
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
+    <div className="shell">
+      <nav className="rail" aria-label="Main">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true"><Icon name="barcode" size={18} /></span>
+          <span className="brand-name">Barcode Generator</span>
+        </div>
+        <div className="rail-items">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              className={`rail-item ${page === item.id ? 'is-active' : ''}`}
+              aria-current={page === item.id ? 'page' : undefined}
+              onClick={() => setPage(item.id)}
+            >
+              <Icon name={item.icon} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+        <button className="rail-credit" onClick={() => setPage('about')}>
+          Created by Aries Aguilar
+          <br />
+          HVAA Computer Trading
+        </button>
       </nav>
 
-      <main className="app-main">
-        {page === 'generate' && <GeneratePage />}
-        {page === 'products' && <ProductsPage />}
-        {page === 'settings' && <SettingsPage />}
+      <main className="main">
+        {page === 'generate' && <GeneratePage goTo={setPage} />}
+        {page === 'products' && <ProductsPage goTo={setPage} />}
+        {page === 'design' && <DesignPage />}
+        {page === 'printer' && <PrinterPage />}
+        {page === 'about' && <AboutPage />}
       </main>
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <SettingsProvider>
       <AppShell />
     </SettingsProvider>
   );
 }
-
-export default App;

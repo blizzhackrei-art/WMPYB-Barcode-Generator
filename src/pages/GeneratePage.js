@@ -1,48 +1,34 @@
 import React, { useState, useRef } from 'react';
 import ProductForm from '../components/ProductForm';
 import LabelPreview from '../components/LabelPreview';
-import PrinterPanel from '../components/PrinterPanel';
+import PrintBar from '../components/PrintBar';
+import { PageHead } from '../components/ui';
 import { addProduct } from '../db/storage';
-import { useSettings } from '../context/SettingsContext';
 
-function GeneratePage() {
-  const { settings } = useSettings();
+const SAMPLE = { name: 'Sample product', price: 125, barcode: '5901234123457', barcode_type: 'EAN13' };
+
+function GeneratePage({ goTo }) {
   const [product, setProduct] = useState(null);
-  const labelCanvasRef = useRef(null);
-  const isLarge = settings.previewSize === 'large';
+  const canvasRef = useRef(null);
 
-  function getLabelCanvas() {
-    return labelCanvasRef.current;
-  }
-
-  async function handleGenerate(newProduct) {
-    setProduct(newProduct);
+  async function handleGenerate(p) {
+    setProduct(p);
     try {
-      await addProduct(newProduct.name, newProduct.price, newProduct.barcode, newProduct.barcode_type);
+      await addProduct(p.name, p.price, p.barcode, p.barcode_type);
     } catch (err) {
       console.error('Save failed:', err);
     }
   }
 
   return (
-    <div>
-      <h1 className="page-title">Generate Label</h1>
-      <div className="generate-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ flex: isLarge ? '1 1 320px' : '1 1 320px', minWidth: 280, maxWidth: isLarge ? 360 : 'none' }}>
-          <ProductForm onGenerate={handleGenerate} />
-        </div>
-
-        <div style={{ flex: isLarge ? '2 1 480px' : '1 1 320px', minWidth: 280 }}>
-          <h3 style={{ marginTop: 0 }}>Preview</h3>
-          {product ? (
-            <LabelPreview product={product} canvasRef={labelCanvasRef} />
-          ) : (
-            <div className="card" style={{ color: 'var(--color-text-muted)' }}>
-              Fill form and click "Generate Label" to preview.
-            </div>
-          )}
-
-          <PrinterPanel getLabelCanvas={getLabelCanvas} />
+    <div className="page">
+      <PageHead title="Create label" sub="Fill in the product, check the sticker, print." />
+      <div className="split">
+        <ProductForm onGenerate={handleGenerate} />
+        <div className="split-side">
+          <LabelPreview product={product || SAMPLE} canvasRef={canvasRef} dimmed={!product} />
+          {!product && <p className="row-hint center">Sample shown. Create a label to replace it.</p>}
+          <PrintBar getCanvas={() => canvasRef.current} hasLabel={!!product} goTo={goTo} />
         </div>
       </div>
     </div>

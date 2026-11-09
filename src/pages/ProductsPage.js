@@ -4,14 +4,15 @@ import { useSettings } from '../context/SettingsContext';
 import EditProductModal from '../components/EditProductModal';
 import { drawProductLabel } from '../barcode/drawLabel';
 import { isReady, notReadyMessage, printCanvas } from '../printer/printerService';
+import { Icon, Notice, PageHead } from '../components/ui';
 
-function ProductsPage() {
+function ProductsPage({ goTo }) {
   const { settings } = useSettings();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [status, setStatus] = useState('');
-  const hiddenCanvasRef = useRef(null);
+  const [editing, setEditing] = useState(null);
+  const [status, setStatus] = useState(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     load();
@@ -20,8 +21,7 @@ function ProductsPage() {
   async function load() {
     setLoading(true);
     try {
-      const data = await getAllProducts();
-      setProducts(data);
+      setProducts(await getAllProducts());
     } catch (err) {
       console.error('Load failed:', err);
     }
@@ -34,91 +34,74 @@ function ProductsPage() {
     load();
   }
 
-  async function handleSaveEdit(updated) {
+  async function handleSave(updated) {
     await updateProduct(updated.id, updated.name, updated.price);
-    setEditingProduct(null);
+    setEditing(null);
     load();
   }
 
-  async function handleReprint(product) {
+  async function handleReprint(p) {
+    setStatus(null);
     if (!isReady(settings)) {
-      alert(notReadyMessage(settings) + ' (Generate page / Settings)');
+      setStatus({ tone: 'warn', text: notReadyMessage(settings) });
       return;
     }
-    setStatus(`Printing ${product.name || product.barcode}...`);
     try {
-      const canvas = hiddenCanvasRef.current;
-      drawProductLabel(canvas, product, {
-        widthMM: settings.labelWidthMM,
-        heightMM: settings.labelHeightMM,
-        showName: settings.showProductName,
-        showPrice: settings.showPrice,
-        currencySymbol: settings.currencySymbol,
-      });
-      await printCanvas(canvas, settings);
-      setStatus('Reprint sent successfully.');
+      await drawProductLabel(canvasRef.current, p, settings);
+      await printCanvas(canvasRef.current, settings);
+      setStatus({ tone: 'ok', text: `Sent ${p.name || p.barcode} to printer.` });
     } catch (err) {
-      setStatus('Reprint failed: ' + err.message);
+      setStatus({ tone: 'bad', text: `Reprint failed. ${err.message || err}` });
     }
   }
 
   return (
-    <div>
-      <h1 className="page-title">Products</h1>
+    <div className="page">
+      <PageHead title="Products" sub="Every label you create is saved here for reprint or edit." />
 
-      {status && (
-        <div className="card" style={{ marginBottom: 16, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-          {status}
-        </div>
+      {status && <Notice tone={status.tone}>{status.text}</Notice>}
+      {status && status.tone === 'warn' && (
+        <button className="btn btn-secondary" onClick={() => goTo('printer')}>Open printer setup</button>
       )}
 
-      <div className="card">
+      <div className="card list-card">
         {loading ? (
-          <p style={{ color: 'var(--color-text-muted)' }}>Loading…</p>
+          <p className="row-hint">Loading...</p>
         ) : products.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)' }}>No products saved yet. Generate a label to save one.</p>
+          <div className="empty">
+            <Icon name="barcode" size={28} />
+            <p>No labels yet.</p>
+            <button className="btn btn-primary" onClick={() => goTo('generate')}>Create your first label</button>
+          </div>
         ) : (
-          <table className="product-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Barcode</th>
-                <th>Type</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name || '—'}</td>
-                  <td>{settings.currencySymbol}{Number(p.price).toFixed(2)}</td>
-                  <td style={{ fontFamily: 'monospace' }}>{p.barcode}</td>
-                  <td>{p.barcode_type}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <button className="btn btn-secondary" onClick={() => handleReprint(p)}>Reprint</button>
-                      <button className="btn btn-secondary" onClick={() => setEditingProduct(p)}>Edit</button>
-                      <button className="btn btn-danger" onClick={() => handleDelete(p.id)}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="plist">
+            {products.map((p) => (
+              <li key={p.id} className="prow">
+                <div className="prow-main">
+                  <div className="prow-name">{p.name || 'No name'}</div>
+                  <div className="prow-meta mono">{p.barcode}</div>
+                </div>
+                <div className="prow-price">{settings.currencySymbol}{Number(p.price).toFixed(2)}</div>
+                <div className="prow-type">{p.barcode_type === 'CODE128' ? 'Code 128' : 'EAN-13'}</div>
+                <div className="prow-actions">
+                  <button className="btn btn-secondary" onClick={() => handleReprint(p)}>
+                    <Icon name="printer" size={16} /> Reprint
+                  </button>
+                  <button className="btn btn-icon" aria-label={`Edit ${p.name || p.barcode}`} onClick={() => setEditing(p)}>
+                    <Icon name="edit" size={18} />
+                  </button>
+                  <button className="btn btn-icon btn-icon-danger" aria-label={`Delete ${p.name || p.barcode}`} onClick={() => handleDelete(p.id)}>
+                    <Icon name="trash" size={18} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
-      {editingProduct && (
-        <EditProductModal
-          product={editingProduct}
-          onSave={handleSaveEdit}
-          onClose={() => setEditingProduct(null)}
-        />
-      )}
-
-      {/* Hidden canvas used only for reprint rendering, not shown to user */}
-      <canvas ref={hiddenCanvasRef} style={{ display: 'none' }} />
+      {editing && <EditProductModal product={editing} onSave={handleSave} onClose={() => setEditing(null)} />}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
 }
